@@ -1,0 +1,3 @@
+-- 開発用シード（必要に応じてギャラリーのサンプルデータを追加可能）
+-- INSERT INTO public.gallery_photos (src, alt, caption, sort_order, user_id)
+-- VALUES ('https://example.com/photo.jpg', '説明', 'キャプション', 0, '<user_uuid>');
