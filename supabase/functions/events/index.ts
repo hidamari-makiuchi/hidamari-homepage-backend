@@ -11,7 +11,7 @@ function isEventCategory(s: unknown): s is EventCategory {
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-user-token",
 };
 
 function jsonResponse(body: object, status: number) {
@@ -52,17 +52,18 @@ Deno.serve(async (req) => {
     }
 
     // POST / PATCH / DELETE は認証必須
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return jsonResponse({ error: "Authorization required" }, 401);
+    // ゲートウェイの厳密な JWT チェックを避けるため、ユーザー JWT は X-User-Token で受け取る（Authorization には anon key が送られる想定）
+    const userToken = req.headers.get("X-User-Token") ?? req.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!userToken) {
+      return jsonResponse({ error: "Authorization or X-User-Token required" }, 401);
     }
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: `Bearer ${userToken}` } },
     });
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    } = await supabase.auth.getUser(userToken);
     if (authError || !user) {
       return jsonResponse({ error: "Invalid or expired token" }, 401);
     }
