@@ -11,6 +11,14 @@ npx supabase start
 
 マイグレーションは `supabase start` 時に自動適用されます。
 
+### 管理者ユーザーの登録
+
+管理者画面でログインするユーザーは **Supabase ダッシュボード（Authentication → Users）** で作成します。メール/パスワードでユーザーを追加してください。
+
+### ギャラリー用 Storage バケット
+
+`config.toml` に `[storage.buckets.gallery]` を定義済みです。`supabase start` でバケットが作成され、マイグレーション `20250225200000_storage_gallery_bucket_policies.sql` で認証ユーザーのアップロード・公開読み取りのポリシーを設定します。本番で Supabase を利用する場合は、Dashboard の Storage でバケット `gallery`（public）を作成し、同様の RLS ポリシーを設定してください。
+
 ## ギャラリー
 
 ### テーブル `gallery_photos`
@@ -75,8 +83,20 @@ curl -X POST "http://127.0.0.1:54321/functions/v1/gallery" \
   -d '{"src":"https://example.com/photo.jpg","alt":"説明","caption":"キャプション","sort_order":0}'
 ```
 
-- `src` 必須。`alt`, `caption`, `sort_order` は任意（省略時は `""` / `0`）。
+- **`src`** 必須（文字列）。**URL をそのまま受け取ります。** 画像バイナリは受け取らず、すでにどこかで配信されている画像の「場所」を渡す想定です。
+- `alt`, `caption`, `sort_order` は任意（省略時は `""` / `0`）。
 - レスポンス: 作成された1件（`201`）。
+
+**アップロード画面を作る場合の流れ（何が `src` にセットされるか）**
+
+1. ユーザーが画面でファイルを選択し「アップロード」する。
+2. **まず画像を Supabase Storage などにアップロード**し、**公開 URL を取得**する。  
+   （例: `https://<project>.supabase.co/storage/v1/object/public/images/abc123.jpg`）
+3. その **URL を `src` にして**、`POST /functions/v1/gallery` を呼ぶ。  
+   body: `{ "src": "取得したURL", "alt": "...", "caption": "...", "sort_order": 0 }`
+4. DB の `gallery_photos.src` には、**2 で取得した URL** がそのまま保存される。
+
+つまり「画像ファイルのアップロード」は Storage（または別の配信先）で行い、gallery の POST には **その結果の URL だけ** を渡す形になります。Edge Function はファイルを受け取らず、URL の登録だけを行います。
 
 #### PATCH — 更新
 
