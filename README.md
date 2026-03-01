@@ -233,3 +233,97 @@ curl -X DELETE "http://127.0.0.1:54321/functions/v1/events?id=<event-uuid>" \
 ```
 
 - `id` はクエリパラメータまたは JSON body で指定。
+
+---
+
+## 陽だまりの活動（activities）
+
+### テーブル `activities`
+
+| カラム       | 型        | 説明 |
+|-------------|-----------|------|
+| id          | UUID      | 主キー |
+| title       | TEXT      | タイトル |
+| description | TEXT      | 説明 |
+| photo_url   | TEXT      | 写真URL（Storage 等の公開URL） |
+| type        | TEXT      | `top` / `event` / `event_blog`（トップ・イベント・イベントブログ） |
+| sort_order  | INT       | 表示順（昇順） |
+| user_id     | UUID      | 登録者（auth.users） |
+| created_at  | TIMESTAMPTZ | 作成日時 |
+
+- **閲覧**: 誰でも可能（RLSで SELECT 許可）
+- **登録・更新・削除**: 認証ユーザーのみ（自分のレコードのみ）
+
+### 活動 API（Edge Function `activities`）
+
+同一エンドポイントで GET / POST / PATCH / DELETE を扱います。
+
+```bash
+npx supabase functions serve activities
+```
+
+- **GET**: 認証不要。一覧取得。クエリ `type`（`top` / `event` / `event_blog`）で種類フィルタ可能。
+- **POST / PATCH / DELETE**: 認証必須（`X-User-Token` にユーザー JWT、Authorization には anon key を送る想定）。
+
+#### GET — 一覧取得（認証不要）
+
+```bash
+curl "http://127.0.0.1:54321/functions/v1/activities" \
+  -H "Authorization: Bearer <ANON_KEY>"
+
+# 種類でフィルタ
+curl "http://127.0.0.1:54321/functions/v1/activities?type=event" \
+  -H "Authorization: Bearer <ANON_KEY>"
+```
+
+#### POST — 新規登録
+
+```bash
+curl -X POST "http://127.0.0.1:54321/functions/v1/activities" \
+  -H "Authorization: Bearer <ANON_KEY>" \
+  -H "X-User-Token: <ユーザーJWT>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"〇〇の会","description":"説明文","photo_url":"https://...","type":"event","sort_order":0}'
+```
+
+- `title`, `type` 必須。`description`, `photo_url`, `sort_order` は任意（省略時は `""` / `""` / `0`）。
+- `type` は `top` / `event` / `event_blog` のいずれか。写真は Storage（例: gallery バケットの `activities/`）にアップロードし、取得した公開 URL を `photo_url` に渡す。
+
+#### PATCH — 更新 / DELETE — 削除
+
+- PATCH: `id` 必須。更新するフィールドのみ送る（`title`, `description`, `photo_url`, `type`, `sort_order`）。
+- DELETE: `id` をクエリパラメータまたは JSON body で指定。
+
+---
+
+## 代表挨拶（greetings）
+
+### テーブル `greetings`
+
+| カラム        | 型        | 説明 |
+|--------------|-----------|------|
+| id           | UUID      | 主キー |
+| title        | TEXT      | タイトル |
+| content      | TEXT      | 内容 |
+| photo_url    | TEXT      | 写真URL |
+| publish_date | DATE      | 公開日（この日以降に表示対象。直近1件のみ表示） |
+| sort_order   | INT       | 表示順（管理用） |
+| user_id      | UUID      | 登録者（auth.users） |
+| created_at   | TIMESTAMPTZ | 作成日時 |
+
+- **閲覧**: 誰でも可能。**登録・更新・削除**: 認証ユーザーのみ。
+
+### 代表挨拶 API（Edge Function `greetings`）
+
+- **GET**: 認証不要。
+  - 一覧: `GET /greetings` → 全件（管理用、`sort_order` 昇順）。
+  - 直近1件: `GET /greetings?current=1` → 公開日を過ぎたもののうち **直近1件のみ**（公開ページ表示用）。`publish_date <= 今日` で絞り、`publish_date` 降順の先頭1件。
+- **POST / PATCH / DELETE**: 認証必須（`X-User-Token` にユーザー JWT）。
+
+```bash
+npx supabase functions serve greetings
+```
+
+- POST: `title` 必須。`content`, `photo_url`, `publish_date`, `sort_order` は任意（`publish_date` 省略時は当日）。
+- PATCH: `id` 必須。更新するフィールドのみ送る（`title`, `content`, `photo_url`, `publish_date`, `sort_order`）。
+- DELETE: `id` をクエリパラメータまたは JSON body で指定。
