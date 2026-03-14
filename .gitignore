@@ -9,5 +9,9 @@ supabase/.temp/
 # OS
 .DS_Store
 
+# Deno
+node_modules/
+.deno/
+
 # IDE (optional)
 # .vscode/

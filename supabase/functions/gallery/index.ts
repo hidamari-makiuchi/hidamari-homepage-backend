@@ -14,7 +14,7 @@ function jsonResponse(body: object, status: number) {
   });
 }
 
-Deno.serve(async (req) => {
+export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -148,4 +148,8 @@ Deno.serve(async (req) => {
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }
-});
+}
+
+if (import.meta.main) {
+  Deno.serve(handler);
+}
