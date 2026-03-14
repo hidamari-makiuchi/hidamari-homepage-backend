@@ -151,6 +151,7 @@ curl "http://127.0.0.1:54321/rest/v1/gallery_photos?select=id,src,alt,caption,so
 | time       | TEXT      | 時間 |
 | location   | TEXT      | 場所（省略時は `陽だまり`） |
 | category   | TEXT      | `health` / `exercise` / `consultation` / `social` のいずれか |
+| price      | INT       | 単価（円）。NULL の場合は非表示 |
 | user_id    | UUID      | 登録者（auth.users） |
 | created_at | TIMESTAMPTZ | 作成日時 |
 

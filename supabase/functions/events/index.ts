@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
 
       let query = supabase
         .from("events")
-        .select("id, title, date, time, location, category, created_at")
+        .select("id, title, date, time, location, category, price, created_at")
         .order("date", { ascending: true })
         .order("time", { ascending: true });
 
@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
         time: string;
         location?: string;
         category: string;
+        price?: number | null;
       };
       try {
         body = await req.json();
@@ -97,6 +98,7 @@ Deno.serve(async (req) => {
           400
         );
       }
+      const price = body.price != null && Number.isFinite(Number(body.price)) ? Number(body.price) : null;
       const { data, error } = await supabase
         .from("events")
         .insert({
@@ -105,9 +107,10 @@ Deno.serve(async (req) => {
           time: body.time,
           location: body.location ?? "陽だまり",
           category: body.category,
+          price,
           user_id: user.id,
         })
-        .select("id, title, date, time, location, category, created_at")
+        .select("id, title, date, time, location, category, price, created_at")
         .single();
       if (error) return jsonResponse({ error: error.message }, 400);
       return jsonResponse({ data }, 201);
@@ -122,6 +125,7 @@ Deno.serve(async (req) => {
         time?: string;
         location?: string;
         category?: string;
+        price?: number | null;
       };
       try {
         body = await req.json();
@@ -143,6 +147,9 @@ Deno.serve(async (req) => {
       if (body.time !== undefined) updates.time = body.time;
       if (body.location !== undefined) updates.location = body.location;
       if (body.category !== undefined) updates.category = body.category;
+      if (body.price !== undefined) {
+        updates.price = body.price != null && Number.isFinite(Number(body.price)) ? Number(body.price) : null;
+      }
       if (Object.keys(updates).length === 0) {
         return jsonResponse({ error: "No fields to update" }, 400);
       }
@@ -150,7 +157,7 @@ Deno.serve(async (req) => {
         .from("events")
         .update(updates)
         .eq("id", body.id)
-        .select("id, title, date, time, location, category, created_at")
+        .select("id, title, date, time, location, category, price, created_at")
         .single();
       if (error) return jsonResponse({ error: error.message }, 400);
       if (!data) return jsonResponse({ error: "Not found or forbidden" }, 404);
