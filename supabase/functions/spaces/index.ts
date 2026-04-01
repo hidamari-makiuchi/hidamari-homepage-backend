@@ -32,7 +32,7 @@ export async function handler(req: Request): Promise<Response> {
 
       let query = supabase
         .from("rental_spaces")
-        .select("id, name, description, capacity, price_per_hour, photo_url, is_available, sort_order, created_at")
+        .select("id, name, description, capacity, area_sqm, price_per_hour, photo_url, is_available, sort_order, created_at")
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
 
@@ -72,6 +72,7 @@ export async function handler(req: Request): Promise<Response> {
         name: string;
         description?: string;
         capacity?: number;
+        area_sqm?: number;
         price_per_hour?: number;
         photo_url?: string;
         is_available?: boolean;
@@ -91,13 +92,14 @@ export async function handler(req: Request): Promise<Response> {
           name: body.name,
           description: body.description ?? "",
           capacity: body.capacity ?? 1,
+          area_sqm: body.area_sqm ?? 0,
           price_per_hour: body.price_per_hour ?? 0,
           photo_url: body.photo_url ?? "",
           is_available: body.is_available ?? true,
           sort_order: body.sort_order ?? 0,
           user_id: user.id,
         })
-        .select("id, name, description, capacity, price_per_hour, photo_url, is_available, sort_order, created_at")
+        .select("id, name, description, capacity, area_sqm, price_per_hour, photo_url, is_available, sort_order, created_at")
         .single();
       if (error) return jsonResponse({ error: error.message }, 400);
       return jsonResponse({ data }, 201);
@@ -110,6 +112,7 @@ export async function handler(req: Request): Promise<Response> {
         name?: string;
         description?: string;
         capacity?: number;
+        area_sqm?: number;
         price_per_hour?: number;
         photo_url?: string;
         is_available?: boolean;
@@ -127,6 +130,7 @@ export async function handler(req: Request): Promise<Response> {
       if (body.name !== undefined) updates.name = body.name;
       if (body.description !== undefined) updates.description = body.description;
       if (body.capacity !== undefined) updates.capacity = body.capacity;
+      if (body.area_sqm !== undefined) updates.area_sqm = body.area_sqm;
       if (body.price_per_hour !== undefined) updates.price_per_hour = body.price_per_hour;
       if (body.photo_url !== undefined) updates.photo_url = body.photo_url;
       if (body.is_available !== undefined) updates.is_available = body.is_available;
@@ -138,7 +142,7 @@ export async function handler(req: Request): Promise<Response> {
         .from("rental_spaces")
         .update(updates)
         .eq("id", body.id)
-        .select("id, name, description, capacity, price_per_hour, photo_url, is_available, sort_order, created_at")
+        .select("id, name, description, capacity, area_sqm, price_per_hour, photo_url, is_available, sort_order, created_at")
         .single();
       if (error) return jsonResponse({ error: error.message }, 400);
       if (!data) return jsonResponse({ error: "Not found or forbidden" }, 404);
