@@ -39,7 +39,7 @@ export async function handler(req: Request): Promise<Response> {
 
       let query = supabase
         .from("events")
-        .select("id, title, date, time, location, category, price, created_at")
+        .select("id, title, date, time, location, category, price, image_url, description, created_at")
         .order("date", { ascending: true })
         .order("time", { ascending: true });
 
@@ -77,6 +77,8 @@ export async function handler(req: Request): Promise<Response> {
         location?: string;
         category: string;
         price?: number | null;
+        image_url?: string | null;
+        description?: string | null;
       };
       try {
         body = await req.json();
@@ -108,9 +110,11 @@ export async function handler(req: Request): Promise<Response> {
           location: body.location ?? "陽だまり",
           category: body.category,
           price,
+          image_url: body.image_url ?? null,
+          description: body.description ?? null,
           user_id: user.id,
         })
-        .select("id, title, date, time, location, category, price, created_at")
+        .select("id, title, date, time, location, category, price, image_url, description, created_at")
         .single();
       if (error) return jsonResponse({ error: error.message }, 400);
       return jsonResponse({ data }, 201);
@@ -126,6 +130,8 @@ export async function handler(req: Request): Promise<Response> {
         location?: string;
         category?: string;
         price?: number | null;
+        image_url?: string | null;
+        description?: string | null;
       };
       try {
         body = await req.json();
@@ -150,6 +156,8 @@ export async function handler(req: Request): Promise<Response> {
       if (body.price !== undefined) {
         updates.price = body.price != null && Number.isFinite(Number(body.price)) ? Number(body.price) : null;
       }
+      if (body.image_url !== undefined) updates.image_url = body.image_url;
+      if (body.description !== undefined) updates.description = body.description;
       if (Object.keys(updates).length === 0) {
         return jsonResponse({ error: "No fields to update" }, 400);
       }
@@ -157,7 +165,7 @@ export async function handler(req: Request): Promise<Response> {
         .from("events")
         .update(updates)
         .eq("id", body.id)
-        .select("id, title, date, time, location, category, price, created_at")
+        .select("id, title, date, time, location, category, price, image_url, description, created_at")
         .single();
       if (error) return jsonResponse({ error: error.message }, 400);
       if (!data) return jsonResponse({ error: "Not found or forbidden" }, 404);
